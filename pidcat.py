@@ -44,8 +44,8 @@ parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest=
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
 args = parser.parse_args()
-serial = args.device_serial
 min_level = LOG_LEVELS_MAP[args.min_level]
+serial = args.device_serial
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 
@@ -144,12 +144,11 @@ TAGTYPES = {
 }
 
 
-device = None
+adb_command = ['adb', 'logcat', '-b', 'events', '-b', 'main', '-b', 'system']
 if serial != None:
-  device = "-s " + serial
-
-adb_command = ['adb', device, 'logcat', '-b', 'events', '-b', 'main', '-b', 'system']
-adb = subprocess.Popen(filter(None, adb_command), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+  adb_command.insert(1, '-s')
+  adb_command.insert(2, serial)
+adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 pids = set()
 last_tag = None
 debug_tags = args.debug_tags
