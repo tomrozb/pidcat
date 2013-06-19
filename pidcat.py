@@ -144,10 +144,11 @@ TAGTYPES = {
 }
 
 
-adb_command = ['adb', 'logcat', '-b', 'events', '-b', 'main', '-b', 'system']
-if serial != None:
-  adb_command.insert(1, '-s')
-  adb_command.insert(2, serial)
+adb_command = ['adb']
+if serial:
+  adb_command.extend(['-s', serial])
+adb_command.extend(['logcat', '-b', 'events', '-b', 'main', '-b', 'system'])
+
 adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 pids = set()
 last_tag = None
