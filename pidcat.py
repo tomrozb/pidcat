@@ -42,10 +42,11 @@ parser.add_argument('--lifecycle', dest='lifecycle', action="store_true", help='
 parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest='debug_tag_prefix', type=str, help='Debug tag prefix')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
+parser.add_argument('-d', '--device', dest='use_device', action='store_true', help='Use first device for log input (adb -d option).')
+parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true', help='Use first emulator for log input (adb -e option).')
 
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level]
-serial = args.device_serial
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 
@@ -145,8 +146,12 @@ TAGTYPES = {
 
 
 adb_command = ['adb']
-if serial:
-  adb_command.extend(['-s', serial])
+if args.device_serial:
+  adb_command.extend(['-s', args.device_serial])
+if args.use_device:
+  adb_command.append('-d')
+if args.use_emulator:
+  adb_command.append('-e')
 adb_command.extend(['logcat', '-b', 'events', '-b', 'main', '-b', 'system'])
 
 adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
