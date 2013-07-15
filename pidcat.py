@@ -232,7 +232,7 @@ def print_log(level, tag, owner, message):
 
 while adb.poll() is None:
   try:
-    line = adb.stdout.readline().decode('utf-8').strip()
+    line = adb.stdout.readline().decode('utf-8', 'replace').strip()
   except KeyboardInterrupt:
     break
   if len(line) == 0:
