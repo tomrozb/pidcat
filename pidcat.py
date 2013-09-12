@@ -37,6 +37,7 @@ parser.add_argument('-p', '--package', nargs='+', metavar='package', dest='packa
 parser.add_argument('-w', '--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('-l', '--min-level', dest='min_level', type=str, choices=LOG_LEVELS, default='V', help='Minimum level to be displayed')
 parser.add_argument('-c', '--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
+parser.add_argument('--always-display-tags', dest='always_tags', action='store_true',help='Always display the tag name')
 parser.add_argument('-n', '--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
 parser.add_argument('--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info (for tests with Espresso)')
 parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
@@ -208,7 +209,7 @@ def print_log(level, tag, owner, message):
 
   # right-align tag title and allocate color if needed
   tag = tag.strip()
-  if tag != last_tag:
+  if tag != last_tag or args.always_tags:
     last_tag = tag
     color = allocate_color(tag)
     tag = tag[-args.tag_width:].rjust(args.tag_width)
