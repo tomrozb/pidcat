@@ -229,7 +229,7 @@ def print_log(level, tag, owner, message):
     message = matcher.sub(replace, message)
 
   linebuf += indent_wrap(message)
-  print(linebuf)
+  print(linebuf.encode('utf-8'))
   return last_tag
 
 while adb.poll() is None:
