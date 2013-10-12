@@ -3,16 +3,16 @@
 '''
 Copyright 2009, The Android Open Source Project
 
-Licensed under the Apache License, Version 2.0 (the "License"); 
-you may not use this file except in compliance with the License. 
-You may obtain a copy of the License at 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  http://www.apache.org/licenses/LICENSE-2.0 
+  http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software 
-distributed under the License is distributed on an "AS IS" BASIS, 
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-See the License for the specific language governing permissions and 
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
@@ -33,7 +33,7 @@ from regex import *
 LOG_LEVELS = 'VDIWEF'
 LOG_LEVELS_MAP = dict([(LOG_LEVELS[i], i) for i in range(len(LOG_LEVELS))])
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
-parser.add_argument('-p', '--package', nargs='+', metavar='package', dest='package', help='Application package name(s)')
+parser.add_argument('-p', '--package', nargs='*', metavar='package', dest='package', help='Application package name(s)')
 parser.add_argument('-w', '--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('-l', '--min-level', dest='min_level', type=str, choices=LOG_LEVELS, default='V', help='Minimum level to be displayed')
 parser.add_argument('-c', '--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
@@ -185,6 +185,8 @@ if args.lifecycle:
 
 
 def match_packages(token):
+  if not args.package or len(args.package) == 0:
+    return True
   index = token.find(':')
   return (token in args.package) if index == -1 else (token[:index] in args.package)
 
