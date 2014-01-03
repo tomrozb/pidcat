@@ -221,8 +221,10 @@ def print_log(level, tag, owner, message):
   linebuf += ' '
 
   # write out level colored edge
-  #if level not in TAGTYPES: break
-  linebuf += TAGTYPES[level]
+  if level in TAGTYPES:
+    linebuf += TAGTYPES[level]
+  else:
+    linebuf += ' ' + level + ' '
   linebuf += ' '
 
   # format tag message using rules
@@ -279,7 +281,7 @@ while adb.poll() is None:
   if not log_line is None:
     level, tag, owner, message = log_line.groups()
     handled = False
-    if LOG_LEVELS_MAP[level] < min_level:
+    if level in LOG_LEVELS_MAP and LOG_LEVELS_MAP[level] < min_level:
       continue
     if debug_tag_prefixes:
       stripped = tag.strip()
