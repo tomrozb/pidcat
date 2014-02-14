@@ -99,6 +99,7 @@ KNOWN_TAGS = {
   'JavaBinder' : CYAN,
   'jdwp': WHITE,
   'StrictMode': WHITE,
+  'DEBUG': YELLOW,
   'LifecycleMonitor': WHITE,
 }
 
@@ -146,7 +147,6 @@ TAGTYPES = {
   'F': colorize(' F ', fg=WHITE, bg=RED),
 }
 
-
 adb_command = ['adb']
 if args.device_serial:
   adb_command.extend(['-s', args.device_serial])
@@ -159,6 +159,7 @@ adb_command.extend(['logcat', '-b', 'events', '-b', 'main', '-b', 'system'])
 adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 pids = set()
 last_tag = None
+app_pid = None
 debug_tags = args.debug_tags
 debug_tag_prefixes = args.debug_tag_prefix
 
@@ -199,6 +200,13 @@ def dead(pid, package):
     linebuf += '\n'
     print(linebuf)
     last_tag = None # Ensure next log gets a tag printed
+
+    # Make sure the backtrace is printed after a native crash
+    if tag.strip() == 'DEBUG':
+      bt_line = BACKTRACE_LINE.match(message.lstrip())
+      if bt_line is not None:
+        message = message.lstrip()
+        owner = app_pid
   return None
 
 def print_log(level, tag, owner, message):
@@ -254,6 +262,8 @@ while adb.poll() is None:
 
     if match_packages(line_package):
       pids.add(line_pid)
+
+      app_pid = line_pid
 
       linebuf  = '\n'
       linebuf += colorize(' ' * (header_size - 1), bg=WHITE)
