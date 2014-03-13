@@ -49,6 +49,13 @@ parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true'
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level]
 
+# Store the names of packages for which to match all processes.
+catchall_package = filter(lambda package: package.find(":") == -1, args.package)
+# Store the name of processes to match exactly.
+named_processes = filter(lambda package: package.find(":") != -1, args.package)
+# Convert default process names from <package>: (cli notation) to <package> (android notation) in the exact names match group.
+named_processes = map(lambda package: package if package.find(":") != len(package) - 1 else package[:-1], named_processes)
+
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 
 width = -1
@@ -188,8 +195,10 @@ if args.lifecycle:
 def match_packages(token):
   if not args.package or len(args.package) == 0:
     return True
+  if token in named_processes:
+    return True
   index = token.find(':')
-  return (token in args.package) if index == -1 else (token[:index] in args.package)
+  return (token in catchall_package) if index == -1 else (token[:index] in catchall_package)
 
 def dead(dead_pid, dead_package):
   if match_packages(dead_package) and dead_pid in pids:
