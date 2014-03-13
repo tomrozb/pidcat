@@ -191,12 +191,12 @@ def match_packages(token):
   index = token.find(':')
   return (token in args.package) if index == -1 else (token[:index] in args.package)
 
-def dead(pid, package):
-  if match_packages(package) and pid in pids:
-    pids.remove(pid)
+def dead(dead_pid, dead_package):
+  if match_packages(dead_package) and dead_pid in pids:
+    pids.remove(dead_pid)
     linebuf  = '\n'
     linebuf += colorize(' ' * (header_size - 1), bg=RED)
-    linebuf += ' Process %s ended' % pid
+    linebuf += ' Process %s (PID: %s) ended' % (dead_package, dead_pid)
     linebuf += '\n'
     print(linebuf)
     last_tag = None # Ensure next log gets a tag printed
