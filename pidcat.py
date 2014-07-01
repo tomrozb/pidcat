@@ -35,7 +35,7 @@ LOG_LEVELS_MAP = dict([(LOG_LEVELS[i], i) for i in range(len(LOG_LEVELS))])
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
 parser.add_argument('-p', '--package', nargs='*', metavar='package', dest='package', help='Application package name(s)')
 parser.add_argument('-w', '--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
-parser.add_argument('-l', '--min-level', dest='min_level', type=str, choices=LOG_LEVELS, default='V', help='Minimum level to be displayed')
+parser.add_argument('-l', '--min-level', dest='min_level', type=str, choices=LOG_LEVELS+LOG_LEVELS.lower(), default='V', help='Minimum level to be displayed')
 parser.add_argument('-c', '--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
 parser.add_argument('--always-display-tags', dest='always_tags', action='store_true',help='Always display the tag name')
 parser.add_argument('-n', '--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
@@ -48,7 +48,7 @@ parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true'
 parser.add_argument('-c', '--clear', dest='clear_logcat', action='store_true', help='Clear the entire log before running.')
 
 args = parser.parse_args()
-min_level = LOG_LEVELS_MAP[args.min_level]
+min_level = LOG_LEVELS_MAP[args.min_level.upper()]
 
 # Store the names of packages for which to match all processes.
 catchall_package = filter(lambda package: package.find(":") == -1, args.package)
