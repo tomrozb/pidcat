@@ -46,6 +46,7 @@ parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial 
 parser.add_argument('-d', '--device', dest='use_device', action='store_true', help='Use first device for log input (adb -d option).')
 parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true', help='Use first emulator for log input (adb -e option).')
 parser.add_argument('-c', '--clear', dest='clear_logcat', action='store_true', help='Clear the entire log before running.')
+parser.add_argument('-ts', '--timestamp', dest='timestamp', action='store_true', help='Show timestamp')
 
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level.upper()]
@@ -58,6 +59,8 @@ named_processes = filter(lambda package: package.find(":") != -1, args.package)
 named_processes = map(lambda package: package if package.find(":") != len(package) - 1 else package[:-1], named_processes)
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
+if args.timestamp:
+  header_size += 13 # '16:06:30.222 '
 
 width = -1
 try:
@@ -162,7 +165,10 @@ if args.use_device:
   adb_command.append('-d')
 if args.use_emulator:
   adb_command.append('-e')
-adb_command.extend(['logcat', '-b', 'events', '-b', 'main', '-b', 'system'])
+adb_command.append('logcat')
+if args.timestamp:
+  adb_command.extend(['-v', 'time'])
+adb_command.extend(['-b', 'events', '-b', 'main', '-b', 'system'])
 
 # Clear log before starting logcat
 if args.clear_logcat:
@@ -228,7 +234,7 @@ def dead(dead_pid, dead_package):
         owner = app_pid
   return None
 
-def print_log(level, tag, owner, message):
+def print_log(timestamp, level, tag, owner, message):
   global last_tag
 
   if owner not in pids:
@@ -260,6 +266,11 @@ def print_log(level, tag, owner, message):
     message = matcher.sub(replace, message)
 
   linebuf += indent_wrap(message)
+
+  # prepend timestamp
+  if args.timestamp:
+    linebuf = timestamp + linebuf
+
   print(linebuf.encode('utf-8'))
   return last_tag
 
@@ -277,7 +288,7 @@ while adb.poll() is None:
 
   start_line = START_LINE.match(line)
   if not start_line is None:
-    line_pid, line_uid, line_package, target = start_line.groups()
+    timestamp, line_pid, line_uid, line_package, target = start_line.groups()
 
     if match_packages(line_package):
       pids.add(line_pid)
@@ -296,19 +307,19 @@ while adb.poll() is None:
 
   dead_line = DEATH_LINE.match(line)
   if not dead_line is None:
-    dead_pid, dead_package = dead_line.groups()
+    timestamp, dead_pid, dead_package = dead_line.groups()
     dead(dead_pid, dead_package)
     continue
 
   kill_line = KILL_LINE.match(line)
   if not kill_line is None:
-    kill_pid, kill_package = kill_line.groups()
+    timestamp, kill_pid, kill_package = kill_line.groups()
     dead(kill_pid, kill_package)
     continue
 
   log_line = LOG_LINE.match(line)
   if not log_line is None:
-    level, tag, owner, message = log_line.groups()
+    timestamp, level, tag, owner, message = log_line.groups()
     handled = False
     if level in LOG_LEVELS_MAP and LOG_LEVELS_MAP[level] < min_level:
       continue
@@ -317,10 +328,10 @@ while adb.poll() is None:
       for tag_prefix in debug_tag_prefixes:
         if stripped.startswith(tag_prefix):
           handled = True
-          print_log(level, tag, owner, message)
+          print_log(timestamp, level, tag, owner, message)
     if not handled:
       if debug_tags:
         if (tag.strip() in debug_tags):
-          print_log(level, tag, owner, message)
+          print_log(timestamp, level, tag, owner, message)
       elif not debug_tag_prefixes:
-        print_log(level, tag, owner, message)
+        print_log(timestamp, level, tag, owner, message)
