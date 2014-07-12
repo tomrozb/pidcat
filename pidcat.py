@@ -81,6 +81,7 @@ KNOWN_TAGS = {
   'ActivityManager': WHITE,
   'ActivityThread': WHITE,
   'AndroidRuntime': CYAN,
+  'JavaBinder' : CYAN,
   'jdwp': WHITE,
   'StrictMode': WHITE,
 }
@@ -143,6 +144,7 @@ if debug_tags:
   debug_tags.append('ActivityThread')
   debug_tags.append('jdwp')
   debug_tags.append('StrictMode')
+  debug_tags.append('JavaBinder')
 
 def match_packages(token):
   index = token.find(':')
