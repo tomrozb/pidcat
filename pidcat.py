@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -u
 
 '''
 Copyright 2009, The Android Open Source Project
@@ -25,11 +25,9 @@ import argparse
 import os
 import sys
 import re
-import fcntl
-import termios
-import struct
+import subprocess
+from subprocess import PIPE
 from regex import *
-
 
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
 parser.add_argument('-p', '--package', nargs='+', metavar='package', dest='package', help='Application package name(s)')
@@ -42,19 +40,23 @@ parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest=
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
 args = parser.parse_args()
-serial=args.device_serial
+serial = args.device_serial
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 
-# unpack the current terminal width/height
-data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
-HEIGHT, WIDTH = struct.unpack('hh',data)
+width = -1
+try:
+  # Get the current terminal width
+  import fcntl, termios, struct
+  h, width = struct.unpack('hh', fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('hh', 0, 0)))
+except:
+  pass
 
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
 RESET = '\033[0m'
 
-def  termcolor(fg=None, bg=None):
+def termcolor(fg=None, bg=None):
   codes = []
   if fg is not None: codes.append('3%d' % fg)
   if bg is not None: codes.append('10%d' % bg)
@@ -64,7 +66,9 @@ def colorize(message, fg=None, bg=None):
   return termcolor(fg, bg) + message + RESET
 
 def indent_wrap(message):
-  wrap_area = WIDTH - header_size
+  if width == -1:
+    return message
+  wrap_area = width - header_size
   messagebuf = ''
   current = 0
   while current < len(message):
@@ -136,11 +140,11 @@ TAGTYPES = {
 
 
 device = ''
-
 if serial != None:
   device = "-s " + serial
 
-input = os.popen('adb %s logcat -b events -b main -b system' % device)
+adb_command = ['adb', 'device', 'logcat', '-b events -b main -b system']
+adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 pids = set()
 last_tag = None
 debug_tags = args.debug_tags
@@ -216,9 +220,9 @@ def print_log(level, tag, owner, message):
   print(linebuf)
   return last_tag
 
-while True:
+while adb.poll() is None:
   try:
-    line = input.readline()
+    line = adb.stdout.readline()
   except KeyboardInterrupt:
     break
   if len(line) == 0:
