@@ -36,7 +36,7 @@ parser.add_argument('-p', '--package', nargs='+', metavar='package', dest='packa
 parser.add_argument('-w', '--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('-c', '--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
 parser.add_argument('-n', '--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
-parser.add_argument('-l', '--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info')
+parser.add_argument('-l', '--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info (for tests with Espresso)')
 parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest='debug_tag_prefix', type=str, help='Debug tag prefix')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
