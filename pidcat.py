@@ -35,6 +35,7 @@ parser = argparse.ArgumentParser(description='Filter logcat by package name')
 parser.add_argument('-p', nargs='+', metavar='package', dest='package', help='Application package name(s)')
 parser.add_argument('--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
+parser.add_argument('--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
 parser.add_argument('-t', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
@@ -142,7 +143,6 @@ last_tag = None
 debug_tags = args.debug_tags
 
 if debug_tags:
-  debug_tags.append('dalvikvm')
   debug_tags.append('AndroidRuntime')
   debug_tags.append('Process')
   debug_tags.append('ActivityManager')
@@ -150,6 +150,10 @@ if debug_tags:
   debug_tags.append('jdwp')
   debug_tags.append('StrictMode')
   debug_tags.append('JavaBinder')
+
+if not args.no_gc:
+  debug_tags.append('dalvikvm')
+
 
 def match_packages(token):
   index = token.find(':')
