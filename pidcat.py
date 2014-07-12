@@ -36,8 +36,10 @@ parser.add_argument('-p', nargs='+', metavar='package', dest='package', help='Ap
 parser.add_argument('--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
 parser.add_argument('-t', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
+parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
 args = parser.parse_args()
+serial=args.device_serial
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 
@@ -122,7 +124,13 @@ TAGTYPES = {
   'F': colorize(' F ', fg=WHITE, bg=RED),
 }
 
-input = os.popen('adb logcat -b events -b main -b system')
+
+device = ''
+
+if serial != None:
+  device = "-s " + serial
+
+input = os.popen('adb %s logcat -b events -b main -b system' % device)
 pids = set()
 last_tag = None
 debug_tags = args.debug_tags
@@ -229,7 +237,7 @@ while True:
   if not log_line is None:
     level, tag, owner, message = log_line.groups()
     if debug_tags:
-      if (tag in debug_tags):
+      if (tag.strip() in debug_tags):
         print_log(level, tag, owner, message)
     else:
       print_log(level, tag, owner, message)
