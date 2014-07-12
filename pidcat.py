@@ -51,12 +51,13 @@ parser.add_argument('-ts', '--timestamp', dest='timestamp', action='store_true',
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level.upper()]
 
-# Store the names of packages for which to match all processes.
-catchall_package = filter(lambda package: package.find(":") == -1, args.package)
-# Store the name of processes to match exactly.
-named_processes = filter(lambda package: package.find(":") != -1, args.package)
-# Convert default process names from <package>: (cli notation) to <package> (android notation) in the exact names match group.
-named_processes = map(lambda package: package if package.find(":") != len(package) - 1 else package[:-1], named_processes)
+if args.package:
+  # Store the names of packages for which to match all processes.
+  catchall_package = filter(lambda package: package.find(":") == -1, args.package)
+  # Store the name of processes to match exactly.
+  named_processes = filter(lambda package: package.find(":") != -1, args.package)
+  # Convert default process names from <package>: (cli notation) to <package> (android notation) in the exact names match group.
+  named_processes = map(lambda package: package if package.find(":") != len(package) - 1 else package[:-1], named_processes)
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 if args.timestamp:
@@ -106,12 +107,12 @@ KNOWN_TAGS = {
   'Process': WHITE,
   'ActivityManager': WHITE,
   'ActivityThread': WHITE,
-  'AndroidRuntime': CYAN,
-  'JavaBinder' : CYAN,
   'jdwp': WHITE,
   'StrictMode': WHITE,
-  'DEBUG': YELLOW,
   'LifecycleMonitor': WHITE,
+  'AndroidRuntime': YELLOW,
+  'JavaBinder' : YELLOW,
+  'DEBUG': YELLOW,
 }
 
 def allocate_color(tag):
@@ -182,7 +183,6 @@ if args.clear_logcat:
 adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 pids = set()
 last_tag = None
-app_pid = None
 debug_tags = args.debug_tags
 debug_tag_prefixes = args.debug_tag_prefix
 
@@ -225,13 +225,6 @@ def dead(dead_pid, dead_package):
     linebuf += '\n'
     print(linebuf)
     last_tag = None # Ensure next log gets a tag printed
-
-    # Make sure the backtrace is printed after a native crash
-    if tag.strip() == 'DEBUG':
-      bt_line = BACKTRACE_LINE.match(message.lstrip())
-      if bt_line is not None:
-        message = message.lstrip()
-        owner = app_pid
   return None
 
 def print_log(timestamp, level, tag, owner, message):
@@ -292,9 +285,6 @@ while adb.poll() is None:
 
     if match_packages(line_package):
       pids.add(line_pid)
-
-      app_pid = line_pid
-
       linebuf  = '\n'
       linebuf += colorize(' ' * (header_size - 1), bg=WHITE)
       linebuf += indent_wrap(' Process created for %s\n' % target)
@@ -321,8 +311,8 @@ while adb.poll() is None:
   if not log_line is None:
     timestamp, level, tag, owner, message = log_line.groups()
     handled = False
-    if level in LOG_LEVELS_MAP and LOG_LEVELS_MAP[level] < min_level:
-      continue
+    if level in LOG_LEVELS_MAP and LOG_LEVELS_MAP[level] < min_level and tag.strip() != 'DEBUG':
+        continue
     if debug_tag_prefixes:
       stripped = tag.strip()
       for tag_prefix in debug_tag_prefixes:
