@@ -28,11 +28,14 @@ import re
 import fcntl
 import termios
 import struct
+from regex import *
+
 
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
-parser.add_argument('package', nargs='+', help='Application package name(s)')
+parser.add_argument('-p', nargs='+', metavar='package', dest='package', help='Application package name(s)')
 parser.add_argument('--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
+parser.add_argument('-t', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 
 args = parser.parse_args()
 
@@ -46,7 +49,7 @@ BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
 RESET = '\033[0m'
 
-def termcolor(fg=None, bg=None):
+def  termcolor(fg=None, bg=None):
   codes = []
   if fg is not None: codes.append('3%d' % fg)
   if bg is not None: codes.append('10%d' % bg)
@@ -106,6 +109,9 @@ if args.color_gc:
 
   RULES[key] = val
 
+  key = re.compile(r'^()((FATAL EXCEPTION: .*))')
+  val = r'\1%s\2%s' % (termcolor(RED), RESET)
+  RULES[key] = val
 
 TAGTYPES = {
   'V': colorize(' V ', fg=WHITE, bg=BLACK),
@@ -113,43 +119,70 @@ TAGTYPES = {
   'I': colorize(' I ', fg=BLACK, bg=GREEN),
   'W': colorize(' W ', fg=BLACK, bg=YELLOW),
   'E': colorize(' E ', fg=BLACK, bg=RED),
-  'F': colorize(' F ', fg=BLACK, bg=RED),
+  'F': colorize(' F ', fg=WHITE, bg=RED),
 }
 
-PID_START = re.compile(r'^Start proc ([a-zA-Z0-9._:]+) for ([a-z]+ [^:]+): pid=(\d+) uid=(\d+) gids=(.*)\r?$')
-PID_KILL  = re.compile(r'^Killing (\d+):([a-zA-Z0-9._]+)/[^:]+: (.*)\r?$')
-PID_LEAVE = re.compile(r'^No longer want ([a-zA-Z0-9._]+) \(pid (\d+)\): .*\r?$')
-PID_DEATH = re.compile(r'^Process ([a-zA-Z0-9._]+) \(pid (\d+)\) has died.?\r$')
-LOG_LINE  = re.compile(r'^([A-Z])/([^\(]+)\( *(\d+)\): (.*)\r?$')
-BUG_LINE  = re.compile(r'^(?!.*(nativeGetEnabledTags)).*$')
-
-input = os.popen('adb logcat')
+input = os.popen('adb logcat -b events -b main -b system')
 pids = set()
 last_tag = None
+debug_tags = args.debug_tags
+
+if debug_tags:
+  debug_tags.append('dalvikvm')
+  debug_tags.append('AndroidRuntime')
+  debug_tags.append('Process')
+  debug_tags.append('ActivityManager')
+  debug_tags.append('ActivityThread')
+  debug_tags.append('jdwp')
+  debug_tags.append('StrictMode')
 
 def match_packages(token):
   index = token.find(':')
   return (token in args.package) if index == -1 else (token[:index] in args.package)
 
-def parse_death(tag, message):
-  if tag != 'ActivityManager':
-    return None
-  kill = PID_KILL.match(message)
-  if kill:
-    pid = kill.group(1)
-    if match_packages(kill.group(2)) and pid in pids:
-      return pid
-  leave = PID_LEAVE.match(message)
-  if leave:
-    pid = leave.group(2)
-    if match_packages(leave.group(1)) and pid in pids:
-      return pid
-  death = PID_DEATH.match(message)
-  if death:
-    pid = death.group(2)
-    if match_packages(death.group(1)) and pid in pids:
-      return pid
+def dead(pid, package):
+  if match_packages(package) and pid in pids:
+    pids.remove(pid)
+    linebuf  = '\n'
+    linebuf += colorize(' ' * (header_size - 1), bg=RED)
+    linebuf += ' Process %s ended' % pid
+    linebuf += '\n'
+    print(linebuf)
+    last_tag = None # Ensure next log gets a tag printed
   return None
+
+def print_log(level, tag, owner, message):
+  global last_tag
+
+  if owner not in pids:
+    return last_tag
+
+  linebuf = ''
+
+  # right-align tag title and allocate color if needed
+  tag = tag.strip()
+  if tag != last_tag:
+    last_tag = tag
+    color = allocate_color(tag)
+    tag = tag[-args.tag_width:].rjust(args.tag_width)
+    linebuf += colorize(tag, fg=color)
+  else:
+    linebuf += ' ' * args.tag_width
+  linebuf += ' '
+
+  # write out level colored edge
+  #if level not in TAGTYPES: break
+  linebuf += TAGTYPES[level]
+  linebuf += ' '
+
+  # format tag message using rules
+  for matcher in RULES:
+    replace = RULES[matcher]
+    message = matcher.sub(replace, message)
+
+  linebuf += indent_wrap(message)
+  print(linebuf)
+  return last_tag
 
 while True:
   try:
@@ -163,61 +196,40 @@ while True:
   if bug_line is None:
     continue
 
+  start_line = START_LINE.match(line)
+  if not start_line is None:
+    line_pid, line_uid, line_package, target = start_line.groups()
+
+    if match_packages(line_package):
+      pids.add(line_pid)
+
+      linebuf  = '\n'
+      linebuf += colorize(' ' * (header_size - 1), bg=WHITE)
+      linebuf += indent_wrap(' Process created for %s\n' % target)
+      linebuf += colorize(' ' * (header_size - 1), bg=WHITE)
+      linebuf += ' PID: %s   UID: %s' % (line_pid, line_uid)
+      linebuf += '\n'
+      print(linebuf)
+      last_tag = None # Ensure next log gets a tag printed
+      continue
+
+  dead_line = DEATH_LINE.match(line)
+  if not dead_line is None:
+    dead_pid, dead_package = dead_line.groups()
+    dead(dead_pid, dead_package)
+    continue
+
+  kill_line = KILL_LINE.match(line)
+  if not kill_line is None:
+    kill_pid, kill_package = kill_line.groups()
+    dead(kill_pid, kill_package)
+    continue
+
   log_line = LOG_LINE.match(line)
   if not log_line is None:
     level, tag, owner, message = log_line.groups()
-
-    start = PID_START.match(message)
-    if start is not None:
-      line_package, target, line_pid, line_uid, line_gids = start.groups()
-
-      if match_packages(line_package):
-        pids.add(line_pid)
-
-        linebuf  = '\n'
-        linebuf += colorize(' ' * (header_size - 1), bg=WHITE)
-        linebuf += indent_wrap(' Process created for %s\n' % target)
-        linebuf += colorize(' ' * (header_size - 1), bg=WHITE)
-        linebuf += ' PID: %s   UID: %s   GIDs: %s' % (line_pid, line_uid, line_gids)
-        linebuf += '\n'
-        print linebuf
-        last_tag = None # Ensure next log gets a tag printed
-
-    dead_pid = parse_death(tag, message)
-    if dead_pid:
-      pids.remove(dead_pid)
-      linebuf  = '\n'
-      linebuf += colorize(' ' * (header_size - 1), bg=RED)
-      linebuf += ' Process %s ended' % dead_pid
-      linebuf += '\n'
-      print linebuf
-      last_tag = None # Ensure next log gets a tag printed
-
-    if owner not in pids:
-      continue
-
-    linebuf = ''
-
-    # right-align tag title and allocate color if needed
-    tag = tag.strip()
-    if tag != last_tag:
-      last_tag = tag
-      color = allocate_color(tag)
-      tag = tag[-args.tag_width:].rjust(args.tag_width)
-      linebuf += colorize(tag, fg=color)
+    if debug_tags:
+      if (tag in debug_tags):
+        print_log(level, tag, owner, message)
     else:
-      linebuf += ' ' * args.tag_width
-    linebuf += ' '
-
-    # write out level colored edge
-    if level not in TAGTYPES: break
-    linebuf += TAGTYPES[level]
-    linebuf += ' '
-
-    # format tag message using rules
-    for matcher in RULES:
-      replace = RULES[matcher]
-      message = matcher.sub(replace, message)
-
-    linebuf += indent_wrap(message)
-    print linebuf
+      print_log(level, tag, owner, message)
