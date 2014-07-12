@@ -1,6 +1,12 @@
 PID Cat
 =======
 
+This fork has diverged back in June 2013 when most of the code has been changed to run pidcat with Samsung devices.
+
+The best features available in the original version will be merged into this fork. 
+
+=======
+
 An update to Jeff Sharkey's excellent [logcat color script][1] which only shows
 log entries for processes from a specific application package.
 
