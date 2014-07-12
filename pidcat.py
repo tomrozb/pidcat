@@ -36,6 +36,7 @@ parser.add_argument('-p', nargs='+', metavar='package', dest='package', help='Ap
 parser.add_argument('--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
 parser.add_argument('--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
 parser.add_argument('--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
+parser.add_argument('-l', '--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info')
 parser.add_argument('-t', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
@@ -153,6 +154,9 @@ if debug_tags:
 
 if not args.no_gc:
   debug_tags.append('dalvikvm')
+
+if args.lifecycle:
+  debug_tags.append('LifecycleMonitor')
 
 
 def match_packages(token):
