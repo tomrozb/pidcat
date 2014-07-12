@@ -29,18 +29,23 @@ import subprocess
 from subprocess import PIPE
 from regex import *
 
+
+LOG_LEVELS = ['V','D','I','W','E']
+LOG_LEVELS_MAP = dict([(LOG_LEVELS[i], i) for i in range(len(LOG_LEVELS))])
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
 parser.add_argument('-p', '--package', nargs='+', metavar='package', dest='package', help='Application package name(s)')
 parser.add_argument('-w', '--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
+parser.add_argument('-l', '--min-level', dest='min_level', type=str, choices=LOG_LEVELS, default='V', help='Minimum level to be displayed')
 parser.add_argument('-c', '--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
 parser.add_argument('-n', '--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
-parser.add_argument('-l', '--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info (for tests with Espresso)')
+parser.add_argument('--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info (for tests with Espresso)')
 parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest='debug_tag_prefix', type=str, help='Debug tag prefix')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
 args = parser.parse_args()
 serial = args.device_serial
+min_level = LOG_LEVELS_MAP[args.min_level]
 
 header_size = args.tag_width + 1 + 3 + 1 # space, level, space
 
@@ -139,12 +144,12 @@ TAGTYPES = {
 }
 
 
-device = ''
+device = None
 if serial != None:
   device = "-s " + serial
 
-adb_command = ['adb', 'device', 'logcat', '-b events -b main -b system']
-adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+adb_command = ['adb', device, 'logcat', '-b', 'events', '-b', 'main', '-b', 'system']
+adb = subprocess.Popen(filter(None, adb_command), stdin=PIPE, stdout=PIPE, stderr=PIPE)
 pids = set()
 last_tag = None
 debug_tags = args.debug_tags
@@ -265,6 +270,8 @@ while adb.poll() is None:
   if not log_line is None:
     level, tag, owner, message = log_line.groups()
     handled = False
+    if LOG_LEVELS_MAP[level] < min_level:
+      continue
     if debug_tag_prefixes:
       stripped = tag.strip()
       for tag_prefix in debug_tag_prefixes:
