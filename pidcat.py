@@ -32,12 +32,13 @@ from regex import *
 
 
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
-parser.add_argument('-p', nargs='+', metavar='package', dest='package', help='Application package name(s)')
-parser.add_argument('--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
-parser.add_argument('--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
-parser.add_argument('--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
+parser.add_argument('-p', '--package', nargs='+', metavar='package', dest='package', help='Application package name(s)')
+parser.add_argument('-w', '--tag-width', metavar='N', dest='tag_width', type=int, default=22, help='Width of log tag')
+parser.add_argument('-c', '--color-gc', dest='color_gc', action='store_true', help='Color garbage collection')
+parser.add_argument('-n', '--no-gc', dest='no_gc', action="store_true", help='Show garbage collection info')
 parser.add_argument('-l', '--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info')
-parser.add_argument('-t', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
+parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
+parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest='debug_tag_prefix', type=str, help='Debug tag prefix')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 
 args = parser.parse_args()
@@ -86,6 +87,7 @@ KNOWN_TAGS = {
   'JavaBinder' : CYAN,
   'jdwp': WHITE,
   'StrictMode': WHITE,
+  'LifecycleMonitor': WHITE,
 }
 
 def allocate_color(tag):
@@ -142,8 +144,12 @@ input = os.popen('adb %s logcat -b events -b main -b system' % device)
 pids = set()
 last_tag = None
 debug_tags = args.debug_tags
+debug_tag_prefixes = args.debug_tag_prefix
 
-if debug_tags:
+# Initialize empty array
+if debug_tags or debug_tag_prefixes:
+  if not debug_tags:
+    debug_tags = []
   debug_tags.append('AndroidRuntime')
   debug_tags.append('Process')
   debug_tags.append('ActivityManager')
@@ -151,11 +157,14 @@ if debug_tags:
   debug_tags.append('jdwp')
   debug_tags.append('StrictMode')
   debug_tags.append('JavaBinder')
+  if not args.no_gc:
+    debug_tags.append('dalvikvm')
 
-if not args.no_gc:
-  debug_tags.append('dalvikvm')
-
+# TODO Lifecycle causes problem with displaying all logs
+# (when no tag or tag prefix is provided)
 if args.lifecycle:
+  if not debug_tags:
+    debug_tags = []
   debug_tags.append('LifecycleMonitor')
 
 
@@ -251,8 +260,16 @@ while True:
   log_line = LOG_LINE.match(line)
   if not log_line is None:
     level, tag, owner, message = log_line.groups()
-    if debug_tags:
-      if (tag.strip() in debug_tags):
+    handled = False
+    if debug_tag_prefixes:
+      stripped = tag.strip()
+      for tag_prefix in debug_tag_prefixes:
+        if stripped.startswith(tag_prefix):
+          handled = True
+          print_log(level, tag, owner, message)
+    if not handled:
+      if debug_tags:
+        if (tag.strip() in debug_tags):
+          print_log(level, tag, owner, message)
+      elif not debug_tag_prefixes:
         print_log(level, tag, owner, message)
-    else:
-      print_log(level, tag, owner, message)
