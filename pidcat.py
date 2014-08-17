@@ -69,6 +69,8 @@ try:
 except:
   pass
 
+wrap_area = width - header_size
+
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
 RESET = '\033[0m'
@@ -235,7 +237,7 @@ def dead(dead_pid, dead_package):
     last_tag = None # Ensure next log gets a tag printed
   return None
 
-def print_log(timestamp, level, tag, owner, message):
+def print_log(timestamp, level, tag, owner, message, custom_bg):
   global last_tag
 
   if owner not in pids:
@@ -266,7 +268,10 @@ def print_log(timestamp, level, tag, owner, message):
     replace = RULES[matcher]
     message = matcher.sub(replace, message)
 
-  linebuf += indent_wrap(message)
+  message = indent_wrap(message)
+  if custom_bg:
+    message = '\033[0;40m' + message + ' ' * (wrap_area - len(message) % wrap_area) + RESET
+  linebuf += message
 
   # prepend timestamp
   if args.timestamp:
@@ -326,10 +331,10 @@ while adb.poll() is None:
       for tag_prefix in debug_tag_prefixes:
         if stripped.startswith(tag_prefix):
           handled = True
-          print_log(timestamp, level, tag, owner, message)
+          print_log(timestamp, level, tag, owner, message, True)
     if not handled:
       if debug_tags:
         if (tag.strip() in debug_tags):
-          print_log(timestamp, level, tag, owner, message)
+          print_log(timestamp, level, tag, owner, message, False)
       elif not debug_tag_prefixes:
-        print_log(timestamp, level, tag, owner, message)
+        print_log(timestamp, level, tag, owner, message, False)
