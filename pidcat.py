@@ -113,6 +113,7 @@ KNOWN_TAGS = {
   'AndroidRuntime': YELLOW,
   'JavaBinder' : YELLOW,
   'DEBUG': YELLOW,
+  'SQLiteDatabase': YELLOW,
 }
 
 def allocate_color(tag):
@@ -200,13 +201,16 @@ debug_tag_prefixes = args.debug_tag_prefix
 if debug_tags or debug_tag_prefixes:
   if not debug_tags:
     debug_tags = []
-  debug_tags.append('AndroidRuntime')
   debug_tags.append('Process')
   debug_tags.append('ActivityManager')
   debug_tags.append('ActivityThread')
   debug_tags.append('jdwp')
   debug_tags.append('StrictMode')
+  debug_tags.append('LifecycleMonitor')
+  debug_tags.append('AndroidRuntime')
   debug_tags.append('JavaBinder')
+  debug_tags.append('DEBUG')
+  debug_tags.append('SQLiteDatabase')
   if not args.no_gc:
     debug_tags.append('dalvikvm')
 
