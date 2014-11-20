@@ -190,6 +190,10 @@ class FakeStdinProcess():
 
 if sys.stdin.isatty():
   adb = subprocess.Popen(adb_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+  first_line = adb.stdout.readline().decode('utf-8', 'replace').strip()
+  if first_line == "Unable to open log device '/dev/log/crash': No such file or directory":
+    adb.stdin.close()
+    adb = subprocess.Popen(adb_command[:-2], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 else:
   adb = FakeStdinProcess()
 pids = set()
