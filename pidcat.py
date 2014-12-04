@@ -105,6 +105,7 @@ def indent_wrap(message):
 LAST_USED = [RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN]
 KNOWN_TAGS = {
   'dalvikvm': WHITE,
+  'dalvikvm-heap': YELLOW,
   'Process': WHITE,
   'ActivityManager': WHITE,
   'ActivityThread': WHITE,
@@ -218,6 +219,7 @@ if debug_tags or debug_tag_prefixes:
   debug_tags.append('DEBUG')
   debug_tags.append('SQLiteDatabase')
   if not args.no_gc:
+    debug_tags.append('dalvikvm-heap')
     debug_tags.append('dalvikvm')
 
 # TODO Lifecycle causes problem with displaying all logs
