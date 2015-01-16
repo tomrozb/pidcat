@@ -46,6 +46,7 @@ parser.add_argument('-d', '--device', dest='use_device', action='store_true', he
 parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true', help='Use first emulator for log input (adb -e option).')
 parser.add_argument('-c', '--clear', dest='clear_logcat', action='store_true', help='Clear the entire log before running.')
 parser.add_argument('-ts', '--timestamp', dest='timestamp', action='store_true', help='Show timestamp')
+parser.add_argument('-i', '--ignore-tag', dest='ignored_tag', action='append', help='Filter output by ignoring specified tag(s)')
 
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level.upper()]
@@ -256,6 +257,8 @@ def print_log(timestamp, level, tag, owner, message, custom_bg):
 
   if owner not in pids:
     return last_tag
+  if args.ignored_tag and tag.strip() in args.ignored_tag:
+    continue
 
   linebuf = ''
 
