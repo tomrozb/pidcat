@@ -28,6 +28,8 @@ import subprocess
 from subprocess import PIPE
 from regex import *
 
+__version__ = '2.0.0'
+
 LOG_LEVELS = 'VDIWEF'
 LOG_LEVELS_MAP = dict([(LOG_LEVELS[i], i) for i in range(len(LOG_LEVELS))])
 parser = argparse.ArgumentParser(description='Filter logcat by package name')
@@ -39,14 +41,15 @@ parser.add_argument('--always-display-tags', dest='always_tags', action='store_t
 parser.add_argument('-ngc', '--no-gc', dest='no_gc', action="store_true", help='Do not show garbage collection info')
 parser.add_argument('-nsm', '--no-strict-mode', dest='no_strict_mode', action="store_true", help='Do not show StrictMode info')
 parser.add_argument('--lifecycle', dest='lifecycle', action="store_true", help='Show Activity lifecycle info (for tests with Espresso)')
-parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest='debug_tag_prefix', type=str, help='Debug tag prefix')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
 parser.add_argument('-d', '--device', dest='use_device', action='store_true', help='Use first device for log input (adb -d option)')
 parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true', help='Use first emulator for log input (adb -e option)')
 parser.add_argument('-c', '--clear', dest='clear_logcat', action='store_true', help='Clear the entire log before running')
-parser.add_argument('-ts', '--timestamp', dest='timestamp', action='store_true', help='Show timestamp')
+parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Filter output by specified tag(s)')
 parser.add_argument('-i', '--ignore-tag', dest='ignored_tag', action='append', help='Filter output by ignoring specified tag(s)')
+parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__, help='Print the version number and exit')
+parser.add_argument('-ts', '--timestamp', dest='timestamp', action='store_true', help='Show timestamp')
 
 args = parser.parse_args()
 min_level = LOG_LEVELS_MAP[args.min_level.upper()]
