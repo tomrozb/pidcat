@@ -116,6 +116,7 @@ KNOWN_TAGS = {
   'JavaBinder' : YELLOW,
   'DEBUG': YELLOW,
   'SQLiteDatabase': YELLOW,
+  'TestRunner' : GREEN
 }
 
 def allocate_color(tag):
@@ -218,6 +219,7 @@ if debug_tags or debug_tag_prefixes:
   debug_tags.append('JavaBinder')
   debug_tags.append('DEBUG')
   debug_tags.append('SQLiteDatabase')
+  debug_tags.append('TestRunner')
   if not args.no_gc:
     debug_tags.append('dalvikvm-heap')
     debug_tags.append('dalvikvm')
