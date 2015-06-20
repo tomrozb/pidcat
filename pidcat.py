@@ -261,7 +261,7 @@ def print_log(timestamp, level, tag, owner, message, custom_bg):
   if owner not in pids:
     return last_tag
   if args.ignored_tag and tag.strip() in args.ignored_tag:
-    continue
+    return last_tag
 
   linebuf = ''
 
