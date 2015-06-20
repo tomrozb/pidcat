@@ -42,9 +42,9 @@ parser.add_argument('--lifecycle', dest='lifecycle', action="store_true", help='
 parser.add_argument('-t', '--tag', nargs='+', metavar='tag', dest='debug_tags', type=str, help='Debug tag')
 parser.add_argument('-r', '--tag-prefix', nargs='+', metavar='tag_prefix', dest='debug_tag_prefix', type=str, help='Debug tag prefix')
 parser.add_argument('-s', '--serial', dest='device_serial', help='Device serial number (adb -s option)')
-parser.add_argument('-d', '--device', dest='use_device', action='store_true', help='Use first device for log input (adb -d option).')
-parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true', help='Use first emulator for log input (adb -e option).')
-parser.add_argument('-c', '--clear', dest='clear_logcat', action='store_true', help='Clear the entire log before running.')
+parser.add_argument('-d', '--device', dest='use_device', action='store_true', help='Use first device for log input (adb -d option)')
+parser.add_argument('-e', '--emulator', dest='use_emulator', action='store_true', help='Use first emulator for log input (adb -e option)')
+parser.add_argument('-c', '--clear', dest='clear_logcat', action='store_true', help='Clear the entire log before running')
 parser.add_argument('-ts', '--timestamp', dest='timestamp', action='store_true', help='Show timestamp')
 parser.add_argument('-i', '--ignore-tag', dest='ignored_tag', action='append', help='Filter output by ignoring specified tag(s)')
 
