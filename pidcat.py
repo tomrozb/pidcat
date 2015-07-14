@@ -119,6 +119,7 @@ KNOWN_TAGS = {
   'AndroidRuntime': YELLOW,
   'JavaBinder' : YELLOW,
   'DEBUG': YELLOW,
+  'LeakCanary': YELLOW,
   'SQLiteDatabase': YELLOW,
   'TestRunner' : GREEN
 }
@@ -223,6 +224,7 @@ if debug_tags or debug_tag_prefixes:
   debug_tags.append('JavaBinder')
   debug_tags.append('DEBUG')
   debug_tags.append('SQLiteDatabase')
+  debug_tags.append('LeakCanary')
   debug_tags.append('TestRunner')
   if not args.no_gc:
     debug_tags.append('dalvikvm-heap')
