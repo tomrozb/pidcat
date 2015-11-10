@@ -178,6 +178,8 @@ if args.use_emulator:
 adb_command.append('logcat')
 if args.timestamp:
   adb_command.extend(['-v', 'time'])
+else:
+  adb_command.extend(['-v', 'brief'])
 adb_command.extend(['-b', 'events', '-b', 'main', '-b', 'system', '-b', 'crash'])
 
 # Clear log before starting logcat
